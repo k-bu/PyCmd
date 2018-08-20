@@ -1,3 +1,7 @@
+###########################################################################################################
+# A fork of the awesome PyCmd from https://sourceforge.net/projects/pycmd/ with some personal extensions. #
+###########################################################################################################
+
 1. What is PyCmd?  
 -----------------
 PyCmd is a 'smart' command prompt extension for Windows' cmd.exe; its purpose is
