@@ -10,3 +10,10 @@
 .ropeproject
 .idea
 semantic.cache
+/*.pyd
+/lib2to3
+/PyCmd.bat
+/PyCmd.exe
+/library.zip
+/python27.dll
+/pywintypes27.dll
