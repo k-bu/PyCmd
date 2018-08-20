@@ -19,7 +19,7 @@ class DirHistory:
 
     # Maximum allowed length (if the history gets too long it becomes hard to
     # navigate)
-    max_len = 9
+    max_len = 30
 
     def __init__(self):
         """Create an empty directory history"""
@@ -43,7 +43,7 @@ class DirHistory:
 
     def jump(self, index):
         """Jump to the specified index (checks whether it's still valid)"""
-        if index == 9:
+        if index == max_len:
             self.index = len(self.locations) - 1
         elif index > len(self.locations):
             pass
