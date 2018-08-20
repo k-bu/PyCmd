@@ -21,6 +21,7 @@ pycmd_data_dir = None
 pycmd_install_dir = None
 state = None
 dir_hist = None
+dir_hist_fixed = None
 tmpfile = None
 save_history_limit = 2000
 
@@ -56,6 +57,12 @@ def init():
     dir_hist.locations = read_history(pycmd_data_dir + '\\dir_history')
     dir_hist.index = len(dir_hist.locations) - 1
     dir_hist.visit_cwd()
+
+    # Read/initialize directory history
+    global dir_hist_fixed
+    dir_hist_fixed = DirHistory()
+    dir_hist_fixed.locations = read_history(pycmd_data_dir + '\\dir_history_fix')
+    dir_hist_fixed.index = len(dir_hist_fixed.locations) - 1
 
     # Create temporary file
     global tmpfile
@@ -144,6 +151,7 @@ def main():
         auto_select = False
         force_repaint = True
         dir_hist.shown = False
+        dir_hist_fixed.shown = False
         print
 
         while True:
@@ -164,6 +172,7 @@ def main():
                 # (dir_hist.shown == False) the result of this action can be
                 # ignored
                 dir_hist.check_overflow(remove_escape_sequences(state.prompt))
+                dir_hist_fixed.check_overflow(remove_escape_sequences(state.prompt))
 
                 # Write current line
                 stdout.write(u'\r' + color.Fore.DEFAULT + color.Back.DEFAULT + appearance.colors.prompt +
@@ -328,6 +337,7 @@ def main():
                     state.handle(ActionCode.ACTION_NEXT)
                 elif rec.VirtualKeyCode == 68:          # Alt-D
                     if state.before_cursor + state.after_cursor == '':
+                        dir_hist_fixed.shown = False  # The displayed dirhist is no longer valid
                         dir_hist.display()
                         dir_hist.check_overflow(remove_escape_sequences(state.prev_prompt))
                         stdout.write(state.prev_prompt)
@@ -343,6 +353,34 @@ def main():
                     state.handle(ActionCode.ACTION_BACKSPACE_WORD)
                 elif rec.VirtualKeyCode == 191:
                     state.handle(ActionCode.ACTION_EXPAND)
+            elif is_alt_pressed(rec) and is_ctrl_pressed(rec) and rec.VirtualKeyCode in [37, 39] + range(49, 59): # Ctrl-Alt-Something
+                if state.before_cursor + state.after_cursor == '':  # Dir history
+                    state.reset_prev_line()
+                    if rec.VirtualKeyCode == 37:            # Alt-Left
+                        changed = dir_hist_fixed.go_left()
+                    elif rec.VirtualKeyCode == 39:          # Alt-Right     
+                        changed = dir_hist_fixed.go_right()
+                    else:                                   # Alt-1..Alt-9
+                        changed = dir_hist_fixed.jump(rec.VirtualKeyCode - 48)
+                    if changed:
+                        state.prev_prompt = state.prompt
+                        state.prompt = appearance.prompt()
+                    if dir_hist_fixed.shown:
+                        dir_hist_fixed.display()
+                        stdout.write(state.prev_prompt)
+                else:
+                    if rec.VirtualKeyCode == 37:            # Alt-Left
+                        state.handle(ActionCode.ACTION_LEFT_WORD, select)
+                    elif rec.VirtualKeyCode == 39:          # Alt-Right
+                        state.handle(ActionCode.ACTION_RIGHT_WORD, select)
+            elif is_alt_pressed(rec) and is_ctrl_pressed(rec) and rec.VirtualKeyCode == 68: # Ctrl-Alt-D
+                if state.before_cursor + state.after_cursor == '':
+                    dir_hist.shown = False  # The displayed dirhist is no longer valid
+                    dir_hist_fixed.display()
+                    dir_hist_fixed.check_overflow(remove_escape_sequences(state.prev_prompt))
+                    stdout.write(state.prev_prompt)
+                else:
+                    state.handle(ActionCode.ACTION_DELETE_WORD) 
             elif is_shift_pressed(rec) and rec.VirtualKeyCode == 33:    # Shift-PgUp
                 (_, t, _, b) = get_viewport()
                 scroll_buffer(t - b + 2)
@@ -419,6 +457,7 @@ def main():
                     elif len(suggestions) > 1:
                         # Multiple completions possible
                         dir_hist.shown = False  # The displayed dirhist is no longer valid
+                        dir_hist_fixed.shown = False  # The displayed dirhist is no longer valid
                         column_width = max([len(s) for s in suggestions]) + 10
                         if column_width > console.get_buffer_size()[0] - 1:
                             column_width = console.get_buffer_size()[0] - 1
@@ -711,7 +750,7 @@ def read_history(filename):
         history = [line.rstrip(u'\n\r') for line in history_file.readlines()]
         history_file.close()
     else:
-        print 'Warning: Can\'t open ' + os.path.basename(filename) + '!'
+        # print 'Warning: Can\'t open ' + os.path.basename(filename) + '!'
         history = []
     return history
 
