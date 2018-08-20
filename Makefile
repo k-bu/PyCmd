@@ -7,7 +7,7 @@
 #
 # Author: Horea Haitonic
 #
-RM = rm -f
+RM = C:\cygwin\bin\rm.exe -f
 CP = cp
 MV = mv
 ZIP = zip
@@ -16,8 +16,8 @@ SHELL = cmd
 SRC = PyCmd.py InputState.py DirHistory.py common.py completion.py console.py fsm.py
 SRC_TEST = common_tests.py
 
-PYTHONHOME_W32 = C:\Python27
-PYTHONHOME_W64 = C:\Python27-amd64
+PYTHONHOME_W32 = C:\python\Python27
+PYTHONHOME_W64 = C:\python\Python27x64
 
 PYTHON_W32 = (set PYTHONHOME=$(PYTHONHOME_W32)) && "$(PYTHONHOME_W32)\python.exe"
 PYTHON_W64 = (set PYTHONHOME=$(PYTHONHOME_W64)) && "$(PYTHONHOME_W64)\python.exe"
@@ -31,7 +31,7 @@ all:
 	$(MAKE) clean
 	$(MAKE) dist_w32 
 	$(MAKE) clean
-	$(MAKE) dist_w64
+#	$(MAKE) dist_w64
 
 doc: pycmd_public.py
 	$(PYTHON_W32) -c "import pycmd_public, pydoc; pydoc.writedoc('pycmd_public')"
