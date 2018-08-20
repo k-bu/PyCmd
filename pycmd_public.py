@@ -6,6 +6,25 @@ unchanged (interface-wise) throughout later versions.
 """
 import os, sys, common, console
 
+
+def run(cmd, timeout_sec):
+    import shlex
+    from subprocess import Popen, PIPE
+    from threading import Timer
+    finished = False
+    stdout = ""
+    stderr = ""
+    proc = Popen(shlex.split(cmd), stdout=PIPE, stderr=PIPE)
+    timer = Timer(timeout_sec, proc.kill)
+    try:
+        timer.start()
+        stdout, stderr = proc.communicate()
+    finally:
+        finished = timer.is_alive()
+        timer.cancel()
+    return finished, stdout, stderr
+
+
 def abbrev_path(path = None):
     """
     Abbreviate a full path (or the current path, if None is provided) to make
@@ -61,6 +80,10 @@ def find_updir(name, path=None):
     return found
 
 
+def prompt_prefix():
+    return ""
+
+
 def simple_prompt():
     """
     Return a prompt containg the current path (abbreviated)
@@ -90,45 +113,44 @@ def git_prompt():
     # manipulate the sys.path so that they can be found (just make sure that the
     # version is compatible with the one used to build PyCmd -- check
     # README.txt)
-    import subprocess, re
+    import re
 
     prompt = ''
 
-    stdout = subprocess.Popen(
-        'git status -b --porcelain -uno',
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=-1).communicate()[0]
-    lines = stdout.split('\n')
-    match_branch = re.match('## (.+)\.\.\.(.+)?.*', lines[0])
-    if not match_branch:
-        # Maybe this is not a tracking branch, fallback
-        match_branch = re.match('## (.+)', lines[0])
+    finished, stdout, stderr = run('git status -b --porcelain -uno', appearance.cvs_timeout)
+    if finished and not stderr:
+        lines = stdout.split('\n')
+        match_branch = re.match('## (.+)\.\.\.(.+)?.*', lines[0])
+        if not match_branch:
+            # Maybe this is not a tracking branch, fallback
+            match_branch = re.match('## (.+)', lines[0])
 
-    if match_branch:
-        branch_name = match_branch.group(1)
-        ahead = behind = ''
-        match_ahead_behind = re.match('## .* \[(ahead (\d+))?(, )?(behind (\d+))?\]', lines[0])
-        if match_ahead_behind:
-            ahead = match_ahead_behind.group(2)
-            behind = match_ahead_behind.group(5)
-        dirty_files = lines[1:-1]
-        mark = ''
-        dirty = any(line[1] in ['M', 'D'] for line in dirty_files)
-        staged = any(line[0] in ['A', 'M', 'D'] for line in dirty_files)
-        if dirty:
-            mark = color.Fore.RED + '*'
-        if staged:
-            mark = color.Fore.GREEN + '*'
-        ahead = '+' + ahead if ahead else ''
-        behind = '-' + behind if behind else ''
-        prompt += (color.Fore.YELLOW + '[' +
-                   mark +
-                   color.Fore.YELLOW + branch_name +
-                   color.Fore.GREEN + ahead +
-                   color.Fore.RED + behind +
-                   color.Fore.YELLOW + ']' +
-                   ' ')
+        if match_branch:
+            branch_name = match_branch.group(1)
+            ahead = behind = ''
+            match_ahead_behind = re.match('## .* \[(ahead (\d+))?(, )?(behind (\d+))?\]', lines[0])
+            if match_ahead_behind:
+                ahead = match_ahead_behind.group(2)
+                behind = match_ahead_behind.group(5)
+            dirty_files = lines[1:-1]
+            mark = ''
+            dirty = any(line[1] in ['M', 'D'] for line in dirty_files)
+            staged = any(line[0] in ['A', 'M', 'D'] for line in dirty_files)
+            if dirty:
+                mark = color.Fore.RED + '*'
+            if staged:
+                mark = color.Fore.GREEN + '*'
+            ahead = '+' + ahead if ahead else ''
+            behind = '-' + behind if behind else ''
+            prompt += (color.Fore.YELLOW + '[' +
+                       mark +
+                       color.Fore.YELLOW + branch_name +
+                       color.Fore.GREEN + ahead +
+                       color.Fore.RED + behind +
+                       color.Fore.YELLOW + ']' +
+                       ' ')
+    else:
+        prompt += (color.Fore.YELLOW + '[?] ')
         
     prompt += color.Fore.DEFAULT + appearance.colors.prompt + appearance.simple_prompt()
     return prompt
@@ -143,18 +165,18 @@ def svn_prompt():
     Requires svn to be present in the PATH.
 
     """
-    import subprocess, os
-
     prompt = ''
     path = abbrev_path()
-    stdout = subprocess.Popen('svn stat -q', shell=True,
-                              stdout=subprocess.PIPE, stderr=-1).communicate()[0]
-    dirty = any(line[0] in ['M', 'A', 'D'] for line in stdout)
+    finished, stdout, stderr = run('svn stat -q', appearance.cvs_timeout)
     prompt += color.Fore.YELLOW + '['
-    if dirty:
-        prompt += color.Fore.RED + '*'
+    if finished and not stderr:
+        dirty = any(line[0] in ['M', 'A', 'D'] for line in stdout)
+        if dirty:
+            prompt += color.Fore.RED + '*'
+        else:
+            prompt += color.Fore.GREEN + '=' 
     else:
-        prompt += color.Fore.GREEN + '=' 
+        prompt += color.Fore.YELLOW + '?' 
     prompt += color.Fore.YELLOW + ']' + ' '
 
     prompt += color.Fore.DEFAULT + appearance.colors.prompt + appearance.simple_prompt()
@@ -168,12 +190,12 @@ def universal_prompt():
     This function selects the appropriate prompt sub-function (simple prompt,
     git prompt, svn prompt) based on the current directory.
     """
-    if find_updir('.git'):
-        return appearance.git_prompt()
-    elif find_updir('.svn'):
-        return appearance.svn_prompt()
+    if appearance.cvs_timeout and find_updir('.git'):
+        return appearance.prompt_prefix() + appearance.git_prompt()
+    elif appearance.cvs_timeout and find_updir('.svn'):
+        return appearance.prompt_prefix() + appearance.svn_prompt()
     else:
-        return appearance.simple_prompt()
+        return appearance.prompt_prefix() + appearance.simple_prompt()
 
 
 class color(object):
@@ -299,9 +321,11 @@ class _Appearance(_Settings):
         self.prompt = universal_prompt
 
         # Some predefined prompts
+        self.prompt_prefix = prompt_prefix
         self.simple_prompt = simple_prompt
         self.git_prompt = git_prompt
         self.svn_prompt = svn_prompt
+        self.cvs_timeout = 0.25
 
         # Color configuration
         self.colors = self._ColorSettings()
