@@ -142,15 +142,15 @@ def git_prompt():
                 mark = color.Fore.GREEN + '*'
             ahead = '+' + ahead if ahead else ''
             behind = '-' + behind if behind else ''
-            prompt += (color.Fore.YELLOW + '[' +
-                       mark +
+            prompt += (color.Fore.DEFAULT + '[' +
+                       color.Fore.YELLOW + mark +
                        color.Fore.YELLOW + branch_name +
                        color.Fore.GREEN + ahead +
                        color.Fore.RED + behind +
-                       color.Fore.YELLOW + ']' +
+                       color.Fore.DEFAULT + ']' +
                        ' ')
     else:
-        prompt += (color.Fore.YELLOW + '[?] ')
+        prompt += (color.Fore.DEFAULT + '[?] ')
         
     prompt += color.Fore.DEFAULT + appearance.colors.prompt + appearance.simple_prompt()
     return prompt
@@ -168,7 +168,7 @@ def svn_prompt():
     prompt = ''
     path = abbrev_path()
     finished, stdout, stderr = run('svn stat -q', appearance.cvs_timeout)
-    prompt += color.Fore.YELLOW + '['
+    prompt += color.Fore.DEFAULT + '['
     if finished and not stderr:
         dirty = any(line[0] in ['M', 'A', 'D'] for line in stdout)
         if dirty:
@@ -176,8 +176,8 @@ def svn_prompt():
         else:
             prompt += color.Fore.GREEN + '=' 
     else:
-        prompt += color.Fore.YELLOW + '?' 
-    prompt += color.Fore.YELLOW + ']' + ' '
+        prompt += '?' 
+    prompt += color.Fore.DEFAULT + ']' + ' '
 
     prompt += color.Fore.DEFAULT + appearance.colors.prompt + appearance.simple_prompt()
     return prompt
