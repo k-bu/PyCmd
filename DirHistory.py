@@ -43,7 +43,7 @@ class DirHistory:
 
     def jump(self, index):
         """Jump to the specified index (checks whether it's still valid)"""
-        if index == max_len:
+        if index == self.max_len:
             self.index = len(self.locations) - 1
         elif index > len(self.locations):
             pass

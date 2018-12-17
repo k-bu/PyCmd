@@ -31,7 +31,7 @@ all:
 	$(MAKE) clean
 	$(MAKE) dist_w32 
 	$(MAKE) clean
-#	$(MAKE) dist_w64
+	$(MAKE) dist_w64
 
 doc: pycmd_public.py
 	$(PYTHON_W32) -c "import pycmd_public, pydoc; pydoc.writedoc('pycmd_public')"

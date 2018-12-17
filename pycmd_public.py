@@ -122,9 +122,14 @@ def git_prompt():
         lines = stdout.split('\n')
         match_branch = re.match('## (.+)\.\.\.(.+)?.*', lines[0])
         if not match_branch:
-            # Maybe this is not a tracking branch, fallback
-            match_branch = re.match('## (.+)', lines[0])
-
+            finished, stdout, stderr = run('git describe --tags --dirty', appearance.cvs_timeout)
+            if finished and not stderr:
+                # Maybe it's a tag
+                tag_lines = stdout.split('\n')
+                match_branch = re.match('(.+)', tag_lines[0])
+            if not match_branch:
+                # Fallback
+                match_branch = re.match('## (.+)', lines[0])
         if match_branch:
             branch_name = match_branch.group(1)
             ahead = behind = ''
