@@ -122,7 +122,8 @@ def git_prompt():
         lines = stdout.split('\n')
         match_branch = re.match('## (.+)\.\.\.(.+)?.*', lines[0])
         if not match_branch:
-            finished, stdout, stderr = run('git describe --tags --dirty', appearance.cvs_timeout)
+            finished, stdout, stderr = run('git describe --exact-match --tags HEAD',
+                                           appearance.cvs_timeout)
             if finished and not stderr:
                 # Maybe it's a tag
                 tag_lines = stdout.split('\n')
