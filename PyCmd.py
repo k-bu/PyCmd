@@ -298,7 +298,7 @@ def main():
                     else:                               # Ctrl-Shift-Z
                         state.handle(ActionCode.ACTION_REDO)
                     auto_select = False
-            elif is_alt_pressed(rec) and not is_ctrl_pressed(rec):      # Alt-Something
+            elif is_alt_pressed(rec) and not is_ctrl_pressed(rec) and not is_shift_pressed(rec):      # Alt-Something
                 if rec.VirtualKeyCode in [37, 39] + range(49, 59):
                     if state.before_cursor + state.after_cursor == '':  # Dir history
                         state.reset_prev_line()
@@ -353,7 +353,7 @@ def main():
                     state.handle(ActionCode.ACTION_BACKSPACE_WORD)
                 elif rec.VirtualKeyCode == 191:
                     state.handle(ActionCode.ACTION_EXPAND)
-            elif is_alt_pressed(rec) and is_ctrl_pressed(rec) and rec.VirtualKeyCode in [37, 39] + range(49, 59): # Ctrl-Alt-Something
+            elif is_alt_pressed(rec) and is_shift_pressed(rec) and rec.VirtualKeyCode in [37, 39] + range(49, 59): # Shift-Alt-Something
                 if state.before_cursor + state.after_cursor == '':  # Dir history
                     state.reset_prev_line()
                     if rec.VirtualKeyCode == 37:            # Alt-Left
@@ -373,7 +373,7 @@ def main():
                         state.handle(ActionCode.ACTION_LEFT_WORD, select)
                     elif rec.VirtualKeyCode == 39:          # Alt-Right
                         state.handle(ActionCode.ACTION_RIGHT_WORD, select)
-            elif is_alt_pressed(rec) and is_ctrl_pressed(rec) and rec.VirtualKeyCode == 68: # Ctrl-Alt-D
+            elif is_alt_pressed(rec) and is_shift_pressed(rec) and rec.VirtualKeyCode == 68: # Shift-Alt-D
                 if state.before_cursor + state.after_cursor == '':
                     dir_hist.shown = False  # The displayed dirhist is no longer valid
                     dir_hist_fixed.display()
